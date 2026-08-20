@@ -1,80 +1,146 @@
-# CS3807 – Deep Learning Laboratory
+# Convolutional Neural Network — CIFAR-10 Image Classification
 
-Lab reports and notebooks for the Deep Learning Laboratory (CS3807), B.Tech Artificial Intelligence & Data Science, Shiv Nadar University Chennai, AY 2026–27.
+A TensorFlow/Keras implementation of a Convolutional Neural Network (CNN) for multi-class image classification, built as part of the CS3807 Deep Learning Laboratory (Shiv Nadar University Chennai, B.Tech AI & DS, AY 2026–27).
 
-Each experiment includes the Jupyter notebook, the compiled LaTeX report (PDF + `.tex` source), and all generated plots.
+The model classifies colour images from the **CIFAR-10** dataset into 10 categories, covering the convolution operation, pooling, feature map visualization, and full CNN training/evaluation from the ground up.
 
-## Experiments
+## Overview
 
-| # | Title | Dataset | Notebook | Report |
-|---|-------|---------|----------|--------|
-| 1 | Single Layer Perceptron for Binary Classification | Banknote Authentication (UCI) | [`LAB1.ipynb`](./experiment-1/LAB1.ipynb) | [`report.pdf`](./experiment-1/report.pdf) |
-| 2 | Multi-Layer Perceptron (MLP) for Multi-Class Image Classification | Fashion-MNIST | [`experiment_2.ipynb`](./experiment-2/experiment_2.ipynb) | [`report3.pdf`](./experiment-2/report3.pdf) |
-| 3 | Convolutional Neural Networks (CNNs) for Image Classification | CIFAR-10 | [`Experiment_3_CNN_final.ipynb`](./experiment-3/Experiment_3_CNN_final.ipynb) | [`report4.pdf`](./experiment-3/report4.pdf) |
+This project covers the full pipeline for a CNN-based image classifier:
 
-## Repository Structure
+- Dataset exploration (sample images, class distribution)
+- Manual/numerical walkthroughs of convolution, max pooling, and parameter counting
+- Convolution experiments — effect of kernel size, stride, and padding on output shape
+- Feature map visualization after a convolution layer
+- Max pooling vs. average pooling comparison
+- Building and training a two-convolution-layer CNN in Keras
+- Evaluation using accuracy, macro precision/recall/F1, confusion matrix, and a per-class classification report
+- Additional exercises: output-size/parameter formulas, ReLU vs. Sigmoid, pooling-type comparison, filter-count comparison
+
+## Dataset
+
+[CIFAR-10](https://www.cs.toronto.edu/~kriz/cifar.html) — small colour photographs of real-world objects and animals.
+
+| Property | Value |
+|---|---|
+| Training images | 50,000 |
+| Testing images | 10,000 |
+| Classes | 10 |
+| Image size | 32 × 32 × 3 (RGB) |
+
+Classes: `airplane`, `automobile`, `bird`, `cat`, `deer`, `dog`, `frog`, `horse`, `ship`, `truck`. The training set is perfectly balanced (5,000 images per class).
+
+## Model Architecture
+
+Final model — a `Sequential` Keras CNN:
 
 ```
-.
-├── experiment-1/
-│   ├── LAB1.ipynb
-│   ├── report.tex
-│   ├── report.pdf
-│   └── plots/
-├── experiment-2/
-│   ├── experiment_2.ipynb
-│   ├── report3.tex
-│   ├── report3.pdf
-│   └── plots/
-├── experiment-3/
-│   ├── Experiment_3_CNN_final.ipynb
-│   ├── report4.tex
-│   ├── report4.pdf
-│   └── plots/
-└── README.md
+Input(32,32,3) → Conv2D(32, 3×3, ReLU, same) → MaxPool(2×2)
+              → Conv2D(64, 3×3, ReLU, same) → MaxPool(2×2)
+              → Flatten → Dense(64, ReLU) → Dense(10, Softmax)
 ```
 
-## Summary of Results
+- **Loss:** categorical cross-entropy
+- **Optimizer:** Adam
+- **Metric:** accuracy
+- **Training:** 20 epochs, batch size 32, 10% validation split
+- **Total parameters:** 282,250
 
-| Experiment | Model | Test Accuracy | Precision | Recall | F1-score |
-|---|---|---|---|---|---|
-| 1 – Perceptron | Scratch-built Perceptron | 0.9818 | 0.9593 | 1.0000 | 0.9793 |
-| 1 – Perceptron | Scikit-learn Perceptron | 0.9891 | 0.9832 | 0.9915 | 0.9873 |
-| 2 – MLP | Baseline (128→64→10) | 0.8713 | 0.8745 | 0.8713 | 0.8693 |
-| 2 – MLP | Optimized (RandomizedSearchCV) | 0.8696 | 0.8689 | 0.8696 | 0.8684 |
-| 3 – CNN | Conv→Pool→Conv→Pool→Dense | 0.6799 | 0.6891 | 0.6799 | 0.6834 |
+## Results
 
-## Tech Stack
+### Final CNN — Test Set
 
-- **Python 3**, **TensorFlow / Keras**, **scikit-learn**, **SciKeras**
-- **NumPy**, **pandas**, **matplotlib**, **seaborn**
-- **LaTeX** (reports compiled with `pdflatex`)
+| Metric | Value |
+|---|---|
+| Accuracy | 0.6799 |
+| Precision (macro) | 0.6891 |
+| Recall (macro) | 0.6799 |
+| F1-score (macro) | 0.6834 |
 
-## Building the Reports
+Training accuracy reached ~91.7% by epoch 20, while validation accuracy plateaued around ~69–71% after epoch 6, with the growing train/validation gap indicating overfitting — confirmed by validation loss rising again after epoch 6–7 even as training loss kept dropping. The confusion matrix shows most misclassifications occurring between visually similar categories: **cat and dog**, and to a lesser extent **bird and deer**.
 
-Each `report*.tex` file is self-contained (assumes the sibling `plots/` folder is present) and compiles with a standard TeX distribution:
+### Convolution & Pooling Experiments
+
+| Experiment | Key Finding |
+|---|---|
+| Kernel size (3×3, 5×5, 7×7) | Every +2 increase in kernel size shrinks output spatial dims by 2 on each side (valid padding) |
+| Stride (1 vs 2) | Stride 2 roughly halves the output spatial dimensions vs. stride 1 |
+| Padding (`same` vs `valid`) | `same` preserves input size; `valid` shrinks output based on kernel size |
+| Max pooling vs. average pooling | Max pooling preserves the strongest activations; average pooling smooths/blurs them — max pooling reached higher validation accuracy (0.6976 vs 0.6742 at 5 epochs) |
+| Filters (16 vs 64) | Widening from 16 → 64 filters improved accuracy by ~4.3 points (0.5672 → 0.6099) for a modest time increase (17.29s → 18.90s) |
+
+### Additional Exercises
+
+| Exercise | Result |
+|---|---|
+| Output size (N=64, F=5, P=2, S=2) | 32 |
+| Parameters (64 filters, 3×3, RGB input) | 1,792 |
+| ReLU vs. Sigmoid | ReLU avoids saturation/vanishing gradients, making it the default for hidden layers; Sigmoid is mostly reserved for binary output layers |
+
+## Requirements
+
+```
+tensorflow
+numpy
+pandas
+matplotlib
+scikit-learn
+```
+
+Install with:
 
 ```bash
-pdflatex report.tex
-pdflatex report.tex   # run twice for references/ToC to resolve
+pip install tensorflow numpy pandas matplotlib scikit-learn
 ```
 
-## Datasets
+## Usage
 
-- **Experiment 1:** [Banknote Authentication Dataset](https://archive.ics.uci.edu/dataset/267/banknote+authentication) — UCI Machine Learning Repository
-- **Experiment 2:** [Fashion-MNIST](https://github.com/zalandoresearch/fashion-mnist) — Zalando Research
-- **Experiment 3:** [CIFAR-10](https://www.cs.toronto.edu/~kriz/cifar.html) — Krizhevsky, 2009
+```python
+import tensorflow as tf
+from tensorflow.keras import layers
+
+cifar10 = tf.keras.datasets.cifar10
+(x_train, y_train), (x_test, y_test) = cifar10.load_data()
+
+# Preprocess: normalize + one-hot encode
+x_train_norm = x_train / 255.0
+x_test_norm = x_test / 255.0
+y_train_cat = tf.keras.utils.to_categorical(y_train, 10)
+y_test_cat = tf.keras.utils.to_categorical(y_test, 10)
+
+# Build and train the CNN
+model = tf.keras.Sequential([
+    layers.Conv2D(32, (3, 3), activation='relu', padding='same', input_shape=(32, 32, 3)),
+    layers.MaxPooling2D((2, 2)),
+    layers.Conv2D(64, (3, 3), activation='relu', padding='same'),
+    layers.MaxPooling2D((2, 2)),
+    layers.Flatten(),
+    layers.Dense(64, activation='relu'),
+    layers.Dense(10, activation='softmax')
+])
+model.compile(optimizer='adam', loss='categorical_crossentropy', metrics=['accuracy'])
+model.fit(x_train_norm, y_train_cat, epochs=20, batch_size=32, validation_split=0.1)
+```
+
+Run the notebook to reproduce all plots (sample images, class distribution, kernel/stride/padding experiments, feature map visualizations, pooling comparisons, accuracy/loss curves, and the confusion matrix).
+
+## Key Takeaways
+
+- **Convolution vs. fully connected layers:** convolution uses small, shared kernels instead of one weight per pixel, drastically cutting parameter count and exploiting translation invariance — the two conv layers here used only 19,392 parameters vs. 196,000+ for an equivalent dense layer.
+- **Stride and padding control output size:** stride skips positions and shrinks the feature map; `same` padding keeps spatial size constant while `valid` padding lets it shrink, both verified directly against the output-size formula.
+- **Pooling type matters:** max pooling retains the strongest activations and outperformed average pooling in this run, though both reduce spatial size and computation identically.
+- **More filters help, cheaply:** going from 16 to 64 filters gave a meaningful accuracy boost for only a small increase in training time, at least at this shallow depth.
+- **Overfitting emerged by epoch 20:** the diverging training/validation curves suggest early stopping or dropout would improve generalization on this architecture.
 
 ## References
 
-1. F. Rosenblatt, "The Perceptron," *Psychological Review*, 1958.
-2. I. Goodfellow, Y. Bengio and A. Courville, *Deep Learning*, MIT Press, 2016.
-3. C. M. Bishop, *Pattern Recognition and Machine Learning*, Springer, 2006.
-4. S. Haykin, *Neural Networks and Learning Machines*, Pearson, 2009.
-5. Xiao, H., Rasul, K., Vollgraf, R., "Fashion-MNIST: a Novel Image Dataset for Benchmarking Machine Learning Algorithms," 2017.
-6. TensorFlow/Keras Documentation, <https://www.tensorflow.org/api_docs>
-7. Scikit-learn Documentation, <https://scikit-learn.org/stable/>
+1. I. Goodfellow, Y. Bengio, A. Courville, *Deep Learning*, MIT Press, 2016.
+2. C. M. Bishop, *Pattern Recognition and Machine Learning*, Springer, 2006.
+3. S. Haykin, *Neural Networks and Learning Machines*, Pearson, 2009.
+4. [TensorFlow Documentation](https://www.tensorflow.org/api_docs)
+5. [CIFAR-10 Dataset Documentation](https://www.cs.toronto.edu/~kriz/cifar.html)
 
 ## Author
 
+CS3807 Deep Learning Laboratory — Experiment 3
 B.Tech Artificial Intelligence & Data Science, Shiv Nadar University Chennai
